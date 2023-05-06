@@ -1,7 +1,6 @@
-import picamera
-import picamera.array
 from time import sleep
 import RPi.GPIO as GPIO
+
 
 class Channel():
     def __init__(self, enable_pin, forward_pin, backward_pin):
@@ -21,7 +20,7 @@ class Channel():
     def drive(self, duty_cycle:int, direction: str):
         #Set direction pin high, other low
         GPIO.output(self.fw, direction == 'fw')
-        GPIO.output(self.bk, direction =='bk')
+        GPIO.output(self.bk, direction == 'bk')
 
         #Change enable to PWM
         self.pwm.ChangeDutyCycle(duty_cycle)
@@ -29,13 +28,14 @@ class Channel():
     def stop(self):
         self.pwm.ChangeDutyCycle(0)
 
+
 class Vehicle():
     def __init__(self, right: Channel, left: Channel):
         self.right = right
         self.left = left
     
-    def turn(self,degrees):
-        #Math for differential steering
+    def drive_linang(self, lin, ang):
+        # TODO: Math for driving motors from linear/angular velocity
         pass
 
     def stop(self):
