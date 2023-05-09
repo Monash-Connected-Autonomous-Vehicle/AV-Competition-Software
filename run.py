@@ -29,11 +29,15 @@ if __name__ == '__main__':
     # Set up Pi camera and run main loop
     with picamera.PiCamera(resolution=args.resolution, framerate=args.framerate) as camera:
         with picamera.array.PiRGBArray(camera) as stream:
-            for img in camera.capture_continuous(stream, format='rgb'):
+            for img in camera.capture_continuous(stream, format='rgb', use_video_port=True):
                 # TODO: package img.array into our format for image slices
                 lin_vel, ang_vel = camera_response(img.array)
                 # TODO: use lin_vel, ang_vel to drive car/Vehicle object
                 car.drive_linang(lin_vel, ang_vel)
 
                 # TODO: stop condition with Pi pin/switch
+                
+                # Flush stream buffer
+                stream.truncate()
+                stream.seek(0)
 
