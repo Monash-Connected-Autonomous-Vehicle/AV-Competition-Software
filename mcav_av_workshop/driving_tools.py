@@ -29,11 +29,28 @@ class MotorChannel():
         self.en = enable_pin
         self.fw = forward_pin
         self.bk = backward_pin
+
+
+    def drive(self, ang_vel):
+        """
+        Drive motor at a specified angular velocity
+
+        Arguments
+        ---------
+        ang_vel : float
+            angular velocity of motor in rad/s
+        """
+        # TODO: logic for converting angular velocity to pwm duty cycle
+        duty_cycle = 0
+        self.drive_raw(duty_cycle, ang_vel >= 0)
+
     
-    def drive(self, duty_cycle: int, forward: bool):
+    def drive_raw(self, duty_cycle: int, forward: bool):
         """
         Motor driving from duty cycle
 
+        Arguments
+        ---------
         duty_cycle : int
             Duty cycle for motor driving PWM signal
         forward : bool
@@ -71,6 +88,7 @@ class Vehicle():
         self.motor_left = left_channel
         self.wheel_r = wheel_r
         self.baseline = baseline
+
     
     def drive_linang(self, lin: float, ang: float):
         """
@@ -83,8 +101,9 @@ class Vehicle():
         ang : float
             Angular velocity of vehicle in radians per second
         """
-        # TODO: Math for driving motors from linear/angular velocity
-        pass
+        dth = self.baseline*ang/2
+        self.motor_left.drive((lin-dth)/self.wheel_r)
+        self.motor_right.drive((lin+dth)/self.wheel_r)
 
     def stop(self):
         """Stops vehicle driving"""
