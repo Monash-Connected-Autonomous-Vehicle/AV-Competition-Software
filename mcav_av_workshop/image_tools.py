@@ -6,38 +6,55 @@ import numpy as np
 from matplotlib import pyplot as plt
 import cv2
 
-RED = (0, 255, 255)  # HSV representation of red, more colors can be added in future
+# Various colors that can be used as defaults by participants
+RED = cv2.cvtColor(np.uint8([[[255, 0,   0  ]]]), cv2.COLOR_RGB2LAB)[0,0,:]  # A better red could be found for the application, interseting problem for participants!
+SKY = cv2.cvtColor(np.uint8([[[110, 150, 180]]]), cv2.COLOR_RGB2LAB)[0,0,:]
 
 
-def highlight_color(image, color, range_h=90, range_s=80, range_v=80):
+class Image:
+    """ Dummy class for code layout planning """
+    def __init__(self, img) -> None:
+        self.img = img
+
+
+class HighlightedImage(Image):
+    """ Dummy class for code layout planning """
+    def __init__(self, bin_img, color) -> None:
+        super().__init__(bin_img)
+        self.color = color
+
+
+def highlight_color(image, color, thresh):
     """
-    Produces a binary image that is true when a given image is within a certain HSV range of a color.
+    Produces a binary image of which pixels in a given image are close to a specified color.
 
-    image: TODO: convert this to image abstraction
-    color: RGB tuple for target color
-    range_h: Tolerance for accepted hues (hues range from 0-360)
-    range_s: Tolerance for accepted saturation (0-100)
-    range_v: Tolerance for accepted value (0-100)
+    Color proximity is determined by the L1 norm distance between colors in LAB colorspace.
+
+    Arguments
+    ---------
+    image : Image
+        Image object containing uint8 representation of LAB colorspace image
+    color : np.ndarray (uint8, uint8, uint8)
+        LAB coordinate representation of highlighted color
+    thresh : int
+        L1 norm distance threshold for pixel color to be highlighted
+    
+    Returns
+    -------
+    highlighted_image : HighlightedImage
+        Binary image of highlighted pixels with associated color
+
+    Notes
+    -----
+    LAB colorspace is a perceptually uniform colorspace that better represents human color ituition than RGB.
+    Perceptual uniformity is important when we want to use a single thresholding value for components.
+    See morea bout LAB colorspace here: https://learnopencv.com/color-spaces-in-opencv-cpp-python/
     """
-    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    color_low = np.where(color > thresh, color, thresh)-thresh
+    color_high = np.where(color < 255-thresh, color, 255-thresh)+thresh
 
-    # Find range values for saturation and value
-    min_s, max_s = max(0, color[1]-range_s), min(255, color[1]+range_s)
-    min_v, max_v = max(0, color[2]-range_v), min(255, color[2]+range_v)
+    return HighlightedImage(cv2.inRange(image, color_low, color_high), color)
 
-    # Find range values for hue 
-    if range_h >= 180:
-        min_h, max_h = 0, 360
-
-    else:
-        min_h, max_h = color[0]-range_h, color[0]+range_h
-        offset = 180 if color[0] < range_h else -180 if color[0] + range_h > 180 else 0
-        if offset != 0:
-            hsv[:,:,0] += offset
-            min_h += offset
-            max_h += offset
-
-    return cv2.inRange(hsv, (min_h, min_s, min_v), (max_h, max_s, max_v))
 
 
 if __name__ == '__main__':
@@ -45,11 +62,12 @@ if __name__ == '__main__':
     Junk testing code can go here, this file should never be called directly in normal operation
     """
     test_img = cv2.imread('test/STOP.jpg')
-    test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2RGB)
+    test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2LAB)
 
-    test = highlight_color(test_img, RED)
-    print(np.count_nonzero(test))
-    plt.imshow(test)
+    
+    test = highlight_color(test_img, RED, 50)
+    print(np.count_nonzero(test.img))
+    plt.imshow(test.img)
     plt.show()
 
 
