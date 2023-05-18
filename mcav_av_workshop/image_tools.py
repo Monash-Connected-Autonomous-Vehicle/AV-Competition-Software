@@ -7,8 +7,9 @@ from matplotlib import pyplot as plt
 import cv2
 
 # Various colors that can be used as defaults by participants
-RED = cv2.cvtColor(np.uint8([[[255, 0,   0  ]]]), cv2.COLOR_RGB2LAB)[0,0,:]  # A better red could be found for the application, interseting problem for participants!
-SKY = cv2.cvtColor(np.uint8([[[110, 150, 180]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+RED  = cv2.cvtColor(np.uint8([[[255, 0,   0  ]]]), cv2.COLOR_RGB2LAB)[0,0,:]  # A better red could be found for the application, interseting problem for participants!
+SKY  = cv2.cvtColor(np.uint8([[[110, 150, 180]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+GREY = cv2.cvtColor(np.uint8([[[78,  82,  78 ]]]), cv2.COLOR_RGB2LAB)[0,0,:]
 
 
 class Image:
@@ -65,7 +66,9 @@ if __name__ == '__main__':
     test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2LAB)
 
     
-    test = highlight_color(test_img, RED, 50)
+    test = highlight_color(test_img, GREY, 20)
+
+    
     print(np.count_nonzero(test.img))
     plt.imshow(test.img)
     plt.show()
