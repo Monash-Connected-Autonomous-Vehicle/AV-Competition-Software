@@ -18,7 +18,7 @@ def aruco_pos(image):
     gray_image = cv2.cvtColor(image, COLOR_BGR2GRAY)  # Change grayscale
     corners, ids, _ = aruco.detectMarkers(gray_image, config.ARUCO_DICT, parameters=config.ARUCO_PARAMS)
 
-    rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(corners, config.ARUCO_SIZE, config.CAMERA_INTRINSIC, config.CAMERA_DISTORTION)
+    rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(corners, config.ARUCO_SIZE, config.CAMERA_INTRINSIC, None)
 
     # TODO: return relative position of aruco markers
           
