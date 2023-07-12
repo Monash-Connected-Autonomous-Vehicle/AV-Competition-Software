@@ -45,7 +45,7 @@ class Crop:
 
     
     def __getitem__(self, overlay_slice):
-        assert isinstance(overlay_slice, np.s_)
+        print(overlay_slice)
         return Crop(self.frame, np.s_[Crop._compose_slices(self.slice[0], overlay_slice[0]), 
                                       Crop._compose_slices(self.slice[1], overlay_slice[1])])
         
@@ -57,7 +57,7 @@ class Crop:
 
 
     @staticmethod
-    def _slice_none(x): 0 if x in None else x  # Cast None to 0 when handling slice start arithmetic
+    def _slice_none(x): return 0 if x is None else x  # Cast None to 0 when handling slice start arithmetic
 
     @staticmethod
     def _compose_slices(s1: slice, s2: slice):
@@ -65,7 +65,8 @@ class Crop:
         Compose slice objects such that for s3: arr[s1][s2] == arr[s3] for array arr.
         Does not handle negative indexing or slice steps > 1.
         """
-        start = Crop._slice_none(s1.start) + Crop._slice_none(s1.start)
+        start = Crop._slice_none(s1.start) + Crop._slice_none(s2.start)
+        print(start)
         stop = s1.stop if s2.stop is None else start + s2.stop
         if start == 0: start = None
         return slice(start, stop)
