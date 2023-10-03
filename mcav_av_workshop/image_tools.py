@@ -167,9 +167,9 @@ if __name__ == '__main__':
     """
     Junk testing code can go here, this file should never be called directly in normal operation
     """
-    filename = 'AV-Competition-Software/mcav_av_workshop/STOP.jpg'
+    filename = 'mcav_av_workshop/test/STOP.jpg'
     test_img = cv2.imread(filename, 1)
-    cropped_img = Crop.crop_bounding_box(test_img, (100, 500), (200, 1500))
+    cropped_img = Crop.crop_bounding_box(test_img, (500, 500), (2000, 1500))
 
     #plt.show()
     #test_img = cv2.imread('test/STOP.jpg')
