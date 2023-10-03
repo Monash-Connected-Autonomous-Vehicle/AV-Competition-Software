@@ -10,6 +10,14 @@ from matplotlib import pyplot as plt
 from config import*
 
 
+# Various colors that can be used as defaults by participants
+RED  = cv2.cvtColor(np.uint8([[[140, 15, 30  ]]]), cv2.COLOR_RGB2LAB)[0,0,:]  # A better red could be found for the application, interseting problem for participants!
+SKY  = cv2.cvtColor(np.uint8([[[110, 150, 180]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+GREY = cv2.cvtColor(np.uint8([[[78,  82,  78 ]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+GREEN = cv2.cvtColor(np.uint8([[[0, 128,    0]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+WHITE = cv2.cvtColor(np.uint8([[[230, 240,255]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+BLUE = cv2.cvtColor(np.uint8([[[140, 200, 240]]]), cv2.COLOR_RGB2LAB)[0,0,:] 
+
 class Frame:
     """
     """
@@ -61,8 +69,9 @@ class Crop:
             top_left and bottom_right parameters are tuples.
 
         """
-        # Convert image to Lab format colour not sure if needed?
-        #img = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+
+        #Changed to RGB format
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         frame = Frame(img.shape[:2])
         frame.update_image(img)
@@ -82,12 +91,11 @@ class Crop:
 
         cropped_lab_image = crop.frame.image_lab[overlay_slice]
        
-        # Display the images with the bounding box
+        # Display the imagens with the bounding box
         cv2.imshow("Original Image", frame.image_lab)
         cv2.imshow("Cropped Image", cropped_lab_image)
-        print("Total Pixels in bounding box:", np.count_nonzero(cropped_lab_image)) # for testing
 
-        return cropped_lab_image
+        return cropped_lab_image, np.count_nonzero(cropped_lab_image)
 
     @staticmethod
     def _slice_none(x): return 0 if x is None else x  # Cast None to 0 when handling slice start arithmetic
@@ -103,13 +111,6 @@ class Crop:
         stop = s1.stop if s2.stop is None else start + s2.stop
         if start == 0: start = None
         return slice(start, stop)
-    
-
-# Various colors that can be used as defaults by participants
-RED  = cv2.cvtColor(np.uint8([[[255, 0,   0  ]]]), cv2.COLOR_RGB2LAB)[0,0,:]  # A better red could be found for the application, interseting problem for participants!
-SKY  = cv2.cvtColor(np.uint8([[[110, 150, 180]]]), cv2.COLOR_RGB2LAB)[0,0,:]
-GREY = cv2.cvtColor(np.uint8([[[78,  82,  78 ]]]), cv2.COLOR_RGB2LAB)[0,0,:]
-
 
 class Image:
     """ Dummy class for code layout planning """
@@ -163,11 +164,18 @@ if __name__ == '__main__':
     """
     filename = 'mcav_av_workshop/test/STOP.jpg'
     test_img = cv2.imread(filename, 1)
-    cropped_img = Crop.crop_bounding_box(test_img, (500, 200), (1500, 1800))
+    cropped_img, pixel_count = Crop.crop_bounding_box(test_img, (500, 200), (1500, 1800))
     
-    test = highlight_color(cropped_img, RED, 20)
+    test = highlight_color(cropped_img, RED, 30)
     
     print(np.count_nonzero(test.img))
+    print(f"Pixel Count in bounding box: {pixel_count}")
+
+    threshold = 20000
+
+    if pixel_count > threshold:
+        #driving_tools Vehicle.stop()
+        pass
 
     plt.imshow(test.img)
     plt.show()
