@@ -30,8 +30,8 @@ class Frame:
     def update_image(self, raw_image):
         rect_img = cv2.remap(raw_image, self.mapx, self.mapy, cv2.INTER_LINEAR)
 
-        if self.image_lab is not None: self.image_lab[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)  # Alter image in place if frame already initialized
-        else: self.image_lab = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)
+        if self.image_lab is not None: self.image_lab[:] = cv2.cvtColor(rect_img, cv2.COLOR_BGR2LAB)  # Alter image in place if frame already initialized
+        else: self.image_lab = cv2.cvtColor(rect_img, cv2.COLOR_BGR2LAB) #BGR2LAB or RGB2LAB
 
         if self.image_gray is not None: self.image_gray[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
         else: self.image_gray = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
@@ -47,7 +47,6 @@ class Crop:
 
     
     def __getitem__(self, overlay_slice):
-        print(overlay_slice)
         return Crop(self.frame, np.s_[Crop._compose_slices(self.slice[0], overlay_slice[0]), 
                                       Crop._compose_slices(self.slice[1], overlay_slice[1])], self.image)
         
@@ -63,8 +62,7 @@ class Crop:
 
         """
         # Convert image to Lab format colour
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
         frame = Frame(img.shape[:2])
         frame.update_image(img)
 
@@ -76,24 +74,26 @@ class Crop:
         cv2.rectangle(frame.image_lab, top_left, bottom_right, colour, thickness)
 
         # Crop just the bounding box
-        crop = Crop(frame, np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]], test_img)
+        crop = Crop(frame, np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]], frame.image_lab)
 
         # Define an overlay slice to update the crop
-        overlay_slice = np.s_[top_left[0]:bottom_right[0], top_left[1]:bottom_right[1]]
+        overlay_slice = np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
         cropped_lab_image = crop.frame.image_lab[overlay_slice]
 
         # Adjust the windows so that they fit within screen :)
-        cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
-        cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Cropped Image', top_left[0], top_left[1])
+        #cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
+        #cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
+        #cv2.resizeWindow('Cropped Image', top_left[0], top_left[1])
         
         # Display the images with the bounding box
         cv2.imshow("Original Image", frame.image_lab)
         cv2.imshow("Cropped Image", cropped_lab_image)
         print("Total Pixels in bounding box:", np.count_nonzero(cropped_lab_image)) # for testing
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
+
+        return cropped_lab_image
 
     @staticmethod
     def _slice_none(x): return 0 if x is None else x  # Cast None to 0 when handling slice start arithmetic
@@ -167,19 +167,20 @@ if __name__ == '__main__':
     """
     Junk testing code can go here, this file should never be called directly in normal operation
     """
-    test_img1 = cv2.imread('mcav_av_workshop/STOP.jpg')
-    Crop.crop_bounding_box(test_img1, (500, 500), (1500, 1500))
-    
-    # plt.imshow(test.img)
-    # plt.show()
-    test_img = cv2.imread('test/STOP.jpg')
-    test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2LAB)
+    filename = 'AV-Competition-Software/mcav_av_workshop/STOP.jpg'
+    test_img = cv2.imread(filename, 1)
+    cropped_img = Crop.crop_bounding_box(test_img, (100, 500), (200, 1500))
+
+    #plt.show()
+    #test_img = cv2.imread('test/STOP.jpg')
+    #cropped_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2LAB)
 
     
-    test = highlight_color(test_img, GREY, 20)
-
+    test = highlight_color(cropped_img, RED, 20)
     
     print(np.count_nonzero(test.img))
+
+
     plt.imshow(test.img)
     plt.show()
 
