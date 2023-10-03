@@ -30,8 +30,8 @@ class Frame:
     def update_image(self, raw_image):
         rect_img = cv2.remap(raw_image, self.mapx, self.mapy, cv2.INTER_LINEAR)
 
-        if self.image_lab is not None: self.image_lab[:] = cv2.cvtColor(rect_img, cv2.COLOR_BGR2LAB)  # Alter image in place if frame already initialized
-        else: self.image_lab = cv2.cvtColor(rect_img, cv2.COLOR_BGR2LAB) #BGR2LAB or RGB2LAB
+        if self.image_lab is not None: self.image_lab[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)  # Alter image in place if frame already initialized
+        else: self.image_lab = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)
 
         if self.image_gray is not None: self.image_gray[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
         else: self.image_gray = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
@@ -61,8 +61,9 @@ class Crop:
             top_left and bottom_right parameters are tuples.
 
         """
-        # Convert image to Lab format colour
-        #img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        # Convert image to Lab format colour not sure if needed?
+        #img = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+
         frame = Frame(img.shape[:2])
         frame.update_image(img)
 
@@ -80,18 +81,11 @@ class Crop:
         overlay_slice = np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
         cropped_lab_image = crop.frame.image_lab[overlay_slice]
-
-        # Adjust the windows so that they fit within screen :)
-        #cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
-        #cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
-        #cv2.resizeWindow('Cropped Image', top_left[0], top_left[1])
-        
+       
         # Display the images with the bounding box
         cv2.imshow("Original Image", frame.image_lab)
         cv2.imshow("Cropped Image", cropped_lab_image)
         print("Total Pixels in bounding box:", np.count_nonzero(cropped_lab_image)) # for testing
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
 
         return cropped_lab_image
 
@@ -169,17 +163,11 @@ if __name__ == '__main__':
     """
     filename = 'mcav_av_workshop/test/STOP.jpg'
     test_img = cv2.imread(filename, 1)
-    cropped_img = Crop.crop_bounding_box(test_img, (500, 500), (2000, 1500))
-
-    #plt.show()
-    #test_img = cv2.imread('test/STOP.jpg')
-    #cropped_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2LAB)
-
+    cropped_img = Crop.crop_bounding_box(test_img, (500, 200), (1500, 1800))
     
     test = highlight_color(cropped_img, RED, 20)
     
     print(np.count_nonzero(test.img))
-
 
     plt.imshow(test.img)
     plt.show()
