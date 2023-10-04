@@ -48,11 +48,9 @@ class Frame:
 class Crop:
     """
     """
-    def __init__(self, frame, slice, image) -> None:
+    def __init__(self, frame, slice) -> None:
         self.frame = frame
         self.slice = slice
-        self.image = image
-
     
     def __getitem__(self, overlay_slice):
         return Crop(self.frame, np.s_[Crop._compose_slices(self.slice[0], overlay_slice[0]), 
@@ -64,38 +62,27 @@ class Crop:
         rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(corners, ARUCO_SIZE, CAMERA_INTRINSIC, None)
         # TODO: return relative position of aruco markers
 
-    def crop_bounding_box(img, top_left, bottom_right):
+    def crop_bounding_box(self, top_left, bottom_right):
         """
             top_left and bottom_right parameters are tuples.
 
         """
-
-        #Changed to RGB format
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        frame = Frame(img.shape[:2])
-        frame.update_image(img)
 
         # Define the colour (BGR) and thickness of the rectangle
         colour = (0, 255, 0)  # Green
         thickness = 2
 
         # Draw the bounding box on the image
-        cv2.rectangle(frame.image_lab, top_left, bottom_right, colour, thickness)
-
-        # Crop just the bounding box
-        crop = Crop(frame, np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]], frame.image_lab)
+        cv2.rectangle(self.frame.image_lab, top_left, bottom_right, colour, thickness)
 
         # Define an overlay slice to update the crop
         overlay_slice = np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
-        cropped_lab_image = crop.frame.image_lab[overlay_slice]
+        cropped_lab_image = self.frame.image_lab[overlay_slice]
        
         # Display the imagens with the bounding box
-        cv2.imshow("Original Image", frame.image_lab)
-        cv2.imshow("Cropped Image", cropped_lab_image)
-
-        return cropped_lab_image, np.count_nonzero(cropped_lab_image)
+        cv2.imshow("Original Image", self.frame.image_lab)
+        return (cropped_lab_image, np.count_nonzero(cropped_lab_image))
 
     @staticmethod
     def _slice_none(x): return 0 if x is None else x  # Cast None to 0 when handling slice start arithmetic
@@ -164,20 +151,49 @@ if __name__ == '__main__':
     """
     filename = 'mcav_av_workshop/test/STOP.jpg'
     test_img = cv2.imread(filename, 1)
-    cropped_img, pixel_count = Crop.crop_bounding_box(test_img, (500, 200), (1500, 1800))
+    test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2RGB)
+
+    frame = Frame(test_img.shape[:2])
+    frame.update_image(test_img)
+
+
+    slice1 = (500, 200)
+    slice2 = (1500, 1800)
+
+    slice3 = (100,200)
+    slice4 = (1300, 1700)
+    test1 = Crop(frame, slice1)
+    test2 = Crop(frame, slice3)
+
+    aaa = test1.crop_bounding_box(slice1, slice2)
+    bbb = test2.crop_bounding_box(slice3, slice4)
     
-    test = highlight_color(cropped_img, RED, 30)
+    cv2.imshow("Cropped Image1", aaa[0])
+    cv2.imshow("Cropped Image2", bbb[0])
+
+    # waits for user to press any key
+    # (this is necessary to avoid Python kernel form crashing)
+    cv2.waitKey(0)
     
-    print(np.count_nonzero(test.img))
-    print(f"Pixel Count in bounding box: {pixel_count}")
+    # closing all open windows
+    cv2.destroyAllWindows()
+        
+
+    test_color_1 = highlight_color(aaa[0], RED, 30)
+    test_color_2 = highlight_color(bbb[0], GREY, 30)
+
+    #print(np.count_nonzero(test.img))
+    #print(f"Pixel Count in bounding box: {pixel_count}")
 
     threshold = 20000
 
-    if pixel_count > threshold:
+    #if pixel_count > threshold:
         #driving_tools Vehicle.stop()
-        pass
+    #    pass
 
-    plt.imshow(test.img)
+    plt.imshow(test_color_1.img)
+    plt.show()
+    plt.imshow(test_color_2.img)
     plt.show()
 
 
