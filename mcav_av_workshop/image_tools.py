@@ -36,6 +36,7 @@ class Frame:
 
 
     def update_image(self, raw_image):
+        raw_image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) #Convert the image from BGR to RGB. cv2 default reads image as BGR
         rect_img = cv2.remap(raw_image, self.mapx, self.mapy, cv2.INTER_LINEAR)
 
         if self.image_lab is not None: self.image_lab[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)  # Alter image in place if frame already initialized
@@ -151,25 +152,31 @@ if __name__ == '__main__':
     """
     filename = 'mcav_av_workshop/test/STOP.jpg'
     test_img = cv2.imread(filename, 1)
-    test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2RGB)
 
     frame = Frame(test_img.shape[:2])
     frame.update_image(test_img)
 
 
-    slice1 = (500, 200)
+    slice1 = (900, 200)
     slice2 = (1500, 1800)
 
-    slice3 = (100,200)
-    slice4 = (1300, 1700)
+    slice3 = (20,100)
+    slice4 = (1000, 1000)
+
+    slice5 = (1750, 1800)
+    slice6 = (2200, 2000)
+
     test1 = Crop(frame, slice1)
     test2 = Crop(frame, slice3)
+    test3 = Crop(frame, slice5)
 
     aaa = test1.crop_bounding_box(slice1, slice2)
     bbb = test2.crop_bounding_box(slice3, slice4)
+    ccc = test3.crop_bounding_box(slice5, slice6)
     
     cv2.imshow("Cropped Image1", aaa[0])
     cv2.imshow("Cropped Image2", bbb[0])
+    cv2.imshow("Cropped Image3", ccc[0])
 
     # waits for user to press any key
     # (this is necessary to avoid Python kernel form crashing)
@@ -181,6 +188,8 @@ if __name__ == '__main__':
 
     test_color_1 = highlight_color(aaa[0], RED, 30)
     test_color_2 = highlight_color(bbb[0], GREY, 30)
+    test_color_3 = highlight_color(ccc[0], SKY, 30)
+
 
     #print(np.count_nonzero(test.img))
     #print(f"Pixel Count in bounding box: {pixel_count}")
@@ -194,6 +203,8 @@ if __name__ == '__main__':
     plt.imshow(test_color_1.img)
     plt.show()
     plt.imshow(test_color_2.img)
+    plt.show()
+    plt.imshow(test_color_3.img)
     plt.show()
 
 
