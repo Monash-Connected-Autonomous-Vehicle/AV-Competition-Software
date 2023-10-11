@@ -63,7 +63,7 @@ class Crop:
         rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(corners, ARUCO_SIZE, CAMERA_INTRINSIC, None)
         # TODO: return relative position of aruco markers
 
-    def crop_bounding_box(self, top_left, bottom_right):
+    def crop_bounding_box(self, top_left, bottom_right, colour_to_highlight, thresh):
         """
             top_left and bottom_right parameters are tuples.
 
@@ -83,7 +83,7 @@ class Crop:
        
         # Display the imagens with the bounding box
         cv2.imshow("Original Image", self.frame.image_lab)
-        return (cropped_lab_image, np.count_nonzero(cropped_lab_image))
+        return (cropped_lab_image, highlight_color(cropped_lab_image, colour_to_highlight, thresh))
 
     @staticmethod
     def _slice_none(x): return 0 if x is None else x  # Cast None to 0 when handling slice start arithmetic
@@ -111,6 +111,9 @@ class HighlightedImage(Image):
     def __init__(self, bin_img, color) -> None:
         super().__init__(bin_img)
         self.color = color
+
+    def check_color_threshold(self, threshold) -> bool:
+        return ((np.count_nonzero(self.img))/(self.img.size)*100) >= threshold
 
 
 def highlight_color(image, color, thresh):
@@ -146,6 +149,7 @@ def highlight_color(image, color, thresh):
 
 
 
+
 if __name__ == '__main__':
     """
     Junk testing code can go here, this file should never be called directly in normal operation
@@ -156,27 +160,14 @@ if __name__ == '__main__':
     frame = Frame(test_img.shape[:2])
     frame.update_image(test_img)
 
-
-    slice1 = (900, 200)
-    slice2 = (1500, 1800)
-
-    slice3 = (20,100)
-    slice4 = (1000, 1000)
-
-    slice5 = (1750, 1800)
-    slice6 = (2200, 2000)
+    slice1 = (900, 600)
+    slice2 = (1110, 870)
 
     test1 = Crop(frame, slice1)
-    test2 = Crop(frame, slice3)
-    test3 = Crop(frame, slice5)
-
-    aaa = test1.crop_bounding_box(slice1, slice2)
-    bbb = test2.crop_bounding_box(slice3, slice4)
-    ccc = test3.crop_bounding_box(slice5, slice6)
+ 
+    cropA= test1.crop_bounding_box(slice1, slice2, RED, 30)
     
-    cv2.imshow("Cropped Image1", aaa[0])
-    cv2.imshow("Cropped Image2", bbb[0])
-    cv2.imshow("Cropped Image3", ccc[0])
+    cv2.imshow("Cropped Image1", cropA[0])
 
     # waits for user to press any key
     # (this is necessary to avoid Python kernel form crashing)
@@ -185,26 +176,13 @@ if __name__ == '__main__':
     # closing all open windows
     cv2.destroyAllWindows()
         
+    plt.imshow(cropA[1].img)
 
-    test_color_1 = highlight_color(aaa[0], RED, 30)
-    test_color_2 = highlight_color(bbb[0], GREY, 30)
-    test_color_3 = highlight_color(ccc[0], SKY, 30)
+    #while True:
+    #    if cropA[1].check_color_threshold(30):
+    #        print("stop")
+    #    print("drive")
 
-
-    #print(np.count_nonzero(test.img))
-    #print(f"Pixel Count in bounding box: {pixel_count}")
-
-    threshold = 20000
-
-    #if pixel_count > threshold:
-        #driving_tools Vehicle.stop()
-    #    pass
-
-    plt.imshow(test_color_1.img)
-    plt.show()
-    plt.imshow(test_color_2.img)
-    plt.show()
-    plt.imshow(test_color_3.img)
     plt.show()
 
 
