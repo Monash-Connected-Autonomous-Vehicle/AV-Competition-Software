@@ -10,6 +10,14 @@ from matplotlib import pyplot as plt
 from config import*
 
 
+# Various colors that can be used as defaults by participants
+RED  = cv2.cvtColor(np.uint8([[[140, 15, 30  ]]]), cv2.COLOR_RGB2LAB)[0,0,:]  # A better red could be found for the application, interseting problem for participants!
+SKY  = cv2.cvtColor(np.uint8([[[110, 150, 180]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+GREY = cv2.cvtColor(np.uint8([[[78,  82,  78 ]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+GREEN = cv2.cvtColor(np.uint8([[[0, 128,    0]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+WHITE = cv2.cvtColor(np.uint8([[[230, 240,255]]]), cv2.COLOR_RGB2LAB)[0,0,:]
+BLUE = cv2.cvtColor(np.uint8([[[140, 200, 240]]]), cv2.COLOR_RGB2LAB)[0,0,:] 
+
 class Frame:
     """
     """
@@ -28,6 +36,7 @@ class Frame:
 
 
     def update_image(self, raw_image):
+        raw_image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) #Convert the image from BGR to RGB. cv2 default reads image as BGR
         rect_img = cv2.remap(raw_image, self.mapx, self.mapy, cv2.INTER_LINEAR)
 
         if self.image_lab is not None: self.image_lab[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)  # Alter image in place if frame already initialized
@@ -40,14 +49,11 @@ class Frame:
 class Crop:
     """
     """
-    def __init__(self, frame, slice, image) -> None:
+    def __init__(self, frame, slice) -> None:
         self.frame = frame
         self.slice = slice
-        self.image = image
-
     
     def __getitem__(self, overlay_slice):
-        print(overlay_slice)
         return Crop(self.frame, np.s_[Crop._compose_slices(self.slice[0], overlay_slice[0]), 
                                       Crop._compose_slices(self.slice[1], overlay_slice[1])], self.image)
         
@@ -57,43 +63,27 @@ class Crop:
         rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(corners, ARUCO_SIZE, CAMERA_INTRINSIC, None)
         # TODO: return relative position of aruco markers
 
-    def crop_bounding_box(img, top_left, bottom_right):
+    def crop_bounding_box(self, top_left, bottom_right, colour_to_highlight, thresh):
         """
             top_left and bottom_right parameters are tuples.
 
         """
-        # Convert image to Lab format colour
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-
-        frame = Frame(img.shape[:2])
-        frame.update_image(img)
 
         # Define the colour (BGR) and thickness of the rectangle
         colour = (0, 255, 0)  # Green
         thickness = 2
 
         # Draw the bounding box on the image
-        cv2.rectangle(frame.image_lab, top_left, bottom_right, colour, thickness)
-
-        # Crop just the bounding box
-        crop = Crop(frame, np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]], test_img)
+        cv2.rectangle(self.frame.image_lab, top_left, bottom_right, colour, thickness)
 
         # Define an overlay slice to update the crop
-        overlay_slice = np.s_[top_left[0]:bottom_right[0], top_left[1]:bottom_right[1]]
+        overlay_slice = np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
-        cropped_lab_image = crop.frame.image_lab[overlay_slice]
-
-        # Adjust the windows so that they fit within screen :)
-        cv2.namedWindow('Original Image', cv2.WINDOW_NORMAL)
-        cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Cropped Image', top_left[0], top_left[1])
-        
-        # Display the images with the bounding box
-        cv2.imshow("Original Image", frame.image_lab)
-        cv2.imshow("Cropped Image", cropped_lab_image)
-        print("Total Pixels in bounding box:", np.count_nonzero(cropped_lab_image)) # for testing
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        cropped_lab_image = self.frame.image_lab[overlay_slice]
+       
+        # Display the imagens with the bounding box
+        cv2.imshow("Original Image", self.frame.image_lab)
+        return (cropped_lab_image, highlight_color(cropped_lab_image, colour_to_highlight, thresh))
 
     @staticmethod
     def _slice_none(x): return 0 if x is None else x  # Cast None to 0 when handling slice start arithmetic
@@ -109,13 +99,90 @@ class Crop:
         stop = s1.stop if s2.stop is None else start + s2.stop
         if start == 0: start = None
         return slice(start, stop)
+
+class Image:
+    """ Dummy class for code layout planning """
+    def __init__(self, img) -> None:
+        self.img = img
+
+
+class HighlightedImage(Image):
+    """ Dummy class for code layout planning """
+    def __init__(self, bin_img, color) -> None:
+        super().__init__(bin_img)
+        self.color = color
+
+    def check_color_threshold(self, threshold) -> bool:
+        return ((np.count_nonzero(self.img))/(self.img.size)*100) >= threshold
+
+
+def highlight_color(image, color, thresh):
+    """
+    Produces a binary image of which pixels in a given image are close to a specified color.
+
+    Color proximity is determined by the L1 norm distance between colors in LAB colorspace.
+
+    Arguments
+    ---------
+    image : Image
+        Image object containing uint8 representation of LAB colorspace image
+    color : np.ndarray (uint8, uint8, uint8)
+        LAB coordinate representation of highlighted color
+    thresh : int
+        L1 norm distance threshold for pixel color to be highlighted
     
+    Returns
+    -------
+    highlighted_image : HighlightedImage
+        Binary image of highlighted pixels with associated color
+
+    Notes
+    -----
+    LAB colorspace is a perceptually uniform colorspace that better represents human color ituition than RGB.
+    Perceptual uniformity is important when we want to use a single thresholding value for components.
+    See morea bout LAB colorspace here: https://learnopencv.com/color-spaces-in-opencv-cpp-python/
+    """
+    color_low = np.where(color > thresh, color, thresh)-thresh
+    color_high = np.where(color < 255-thresh, color, 255-thresh)+thresh
+
+    return HighlightedImage(cv2.inRange(image, color_low, color_high), color)
+
+
+
+
 if __name__ == '__main__':
     """
     Junk testing code can go here, this file should never be called directly in normal operation
     """
-    test_img = cv2.imread('mcav_av_workshop/STOP.jpg')
-    Crop.crop_bounding_box(test_img, (500, 500), (1500, 1500))
+    filename = 'mcav_av_workshop/test/STOP.jpg'
+    test_img = cv2.imread(filename, 1)
+
+    frame = Frame(test_img.shape[:2])
+    frame.update_image(test_img)
+
+    slice1 = (900, 600)
+    slice2 = (1110, 870)
+
+    test1 = Crop(frame, slice1)
+ 
+    cropA= test1.crop_bounding_box(slice1, slice2, RED, 30)
     
-    # plt.imshow(test.img)
-    # plt.show()
+    cv2.imshow("Cropped Image1", cropA[0])
+
+    # waits for user to press any key
+    # (this is necessary to avoid Python kernel form crashing)
+    cv2.waitKey(0)
+    
+    # closing all open windows
+    cv2.destroyAllWindows()
+        
+    plt.imshow(cropA[1].img)
+
+    #while True:
+    #    if cropA[1].check_color_threshold(30):
+    #        print("stop")
+    #    print("drive")
+
+    plt.show()
+
+
