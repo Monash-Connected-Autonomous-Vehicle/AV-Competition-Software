@@ -1,0 +1,6 @@
+.idea
+.DS_Store
+
+# testing
+mcav_av_workshop/test
+mcav_av_workshop/__pycache__/
