@@ -1,5 +1,6 @@
 .idea
 .DS_Store
+.env
 
 # testing
 mcav_av_workshop/test
