@@ -5,3 +5,4 @@ picamera2==0.3.14
 python-dotenv==1.0.0
 roboflow==1.1.9
 supervision==0.16.0
+inference-cli==0.9.4
