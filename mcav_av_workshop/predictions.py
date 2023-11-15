@@ -1,27 +1,41 @@
+import os
+import time
+from dotenv import load_dotenv
 from roboflow import Roboflow
+from picamera2 import Picamera2
 import cv2
 
-rf = Roboflow(api_key="YOUR_API_KEY")   # Change to your API KEY
+load_dotenv()
+
+rf = Roboflow(api_key="{}".format(os.environ.get('ROBOFLOW_KEY')))  # Change to your API KEY
 project = rf.workspace().project("codedrive-traffic-lights")
-model = project.version(1).model
+model = project.version(1, local='http://localhost:9001/').model
 
 # Open a connection to the webcam (0 is usually the default camera)
-cap = cv2.VideoCapture(0)
+cam = Picamera2()
+capture_config = cam.create_still_configuration(main={"size": (1640, 1232)})
+cam.configure(capture_config)
+cam.start()
+time.sleep(1)
 
-#image_path = "./output_images/output_4.jpg"
+# image_path = "./output_images/output_4.jpg"
 
 # infer on a local image
-#results = model.predict(image_path, confidence=36, overlap=50).json()
+# results = model.predict(image_path, confidence=36, overlap=50).json()
 
 # Load the image
-#image = cv2.imread(image_path, 1)
+# image = cv2.imread(image_path, 1)
 
-while True:
-    ret, frame = cap.read()
-    
+while cam.is_open:
+    cam_array = cam.capture_array("main")
+
+    img = cv2.cvtColor(cam_array, cv2.COLOR_BGRA2RGB)
+    print(img.shape)
+
     # Infer on the captured frame
-    results = model.predict(frame, confidence=36, overlap=50).json()
-    
+    results = model.predict(img, confidence=50, overlap=50).json()
+    print(results)
+
     # Draw bounding boxes on the image
     for prediction in results['predictions']:
         x = int(prediction['x'])
@@ -38,18 +52,18 @@ while True:
 
         # Draw the bounding box
         label = f"Confidence: {confidence:.2%}"
-        cv2.rectangle(frame, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=4)
-        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
+        cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=4)
+        cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
 
     # Display the resulting frame
-    cv2.imshow('Webcam', frame)
+    cv2.imshow('Webcam', img)
 
     # Break the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # When everything is done, release the capture
-cap.release()
+cam.close()
 cv2.destroyAllWindows()
 
 # # visualize our prediction
