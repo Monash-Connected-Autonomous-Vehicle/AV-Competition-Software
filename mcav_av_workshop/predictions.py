@@ -71,3 +71,11 @@ cv2.destroyAllWindows()
 
 # # infer on an image hosted elsewhere
 # # print(model.predict("URL_OF_YOUR_IMAGE", hosted=True, confidence=40, overlap=30).json())
+
+# Determining if traffic light is on or not
+# for index, images in enumerate(os.listdir(folder_dir_2)):
+#     image = cv2.imread(f"bound_box_img/{images}")
+#     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#     test_color_1 = highlight_color(image, RED, 30)
+#     if test_color_1.check_color_threshold(50):
+#         print(f"{images} Stops")
