@@ -5,23 +5,28 @@ import multiprocessing as mp
 import time
 import threading
 import sys
-from PIL import Image
 
 
 def drive_camera(channel: connection.Connection, is_done: threading.Event):
-    with Picamera2 as picam2:
+    """The process function for producing camera frames
+    TODO: Consider using a Queue for non-blocking synchronisation, stuck on take 1 push 1 might be capping speed
+    """
+    with Picamera2() as picam2:
         camera_config = picam2.create_still_configuration(main={"size": (1920, 1080)},
                                                         lores={"size": (640, 480)},
                                                             display="main")
         picam2.configure(camera_config)
+        picam2.set_controls({"FrameRate": 40}) # Manually increase beyond 15 fps default
         picam2.start()
 
-        for i in range(50):
+        while True:
+            array = picam2.capture_array("main")
+            if channel.poll() is False:
+                channel.send((time.time(), array))
             if is_done.is_set():
                 break
-            array = picam2.capture_array("main")
-            channel.send((time.time(), array))
-            time.sleep(0.01)
+            # print("captured")
+            time.sleep(0.01) # Delay to release lock on channel to allow receiving
 
 def start_picamera() -> tuple[Process, connection.Connection, threading.Event]:
     """
@@ -31,7 +36,9 @@ def start_picamera() -> tuple[Process, connection.Connection, threading.Event]:
     to receive the data use listener.poll() to check for a message listener.recv()
     to get the data. Data is sent as a time-stampled tuple (send_time, image_array).
 
-    ## TODO: Create an event to listen for when to close the picamera process.
+    RECOMMENDED USE: 
+        Use the PicameraManager class as a context using with PicameraManager() as listener:
+        This wraps the setup and burndown of the subprocess with the context avoiding process leaks.
 
     RESPONSIBILTIES:
         When done and closing:
@@ -40,20 +47,31 @@ def start_picamera() -> tuple[Process, connection.Connection, threading.Event]:
             Then close the camera process 
         After this, everything should be released and can be garbage collected safely.
 
+    COMMON BUGS:
+        Camera failed to initialise -> The camera is already locked by a process
+
     Example:
-        ## Listen for the most recent message over the pipe
-        ## Then save the image
-        for _ in range(100):
+    with PicameraManager() as visual_listener:
+        payload = None
+        loop_time = time.time()
+        delays = list()
+        MAX_DELAY = 0.2 # Try to skip images more than MAX_DELAY seconds old
+        for _ in range(1000):
             received = False
-            while listen.poll():
-                sent_at, payload = listen.recv()
+            while visual_listener.poll():
+                sent_at, payload = visual_listener.recv()
                 received = True
+                if sent_at - loop_time < MAX_DELAY:
+                    break
             if received:
-                print(f"FPS: {1/(time.time() - sent_at)}")
-                # print(payload)
-                image = Image.fromarray(payload, mode="RGB")
-                image.save(f"bad_pictures/example_{time.time()}.jpg")
-            time.sleep(0.1) ## A time delay is important to ensure the pipe lock is released for the sender to put messages
+                delay = time.time() - sent_at
+                delays.append(delay)
+                # print(f"Received an image frame, delay: {delay}, FPS: {1/delay}")
+                # image = Image.fromarray(payload, mode="RGB")
+                # image.save(f"bad_pictures/example_{time.time()}.jpg")
+            time.sleep(0.05) # Delay to release lock on visual_listener for sending
+            loop_time = time.time()
+    print(f"Average delay: {sum(delays)/len(delays)}; Average FPS: {1/sum(delays)*len(delays)}"
     """
     mp.set_start_method('fork')
     listen, shout = Pipe()
@@ -63,44 +81,68 @@ def start_picamera() -> tuple[Process, connection.Connection, threading.Event]:
     
     return camera_process, listen, is_done
 
+class PicameraManager():
+    """
+    Wrapper class for Picamera to use multiprocessing for picture capture.
+    Usable with the context manager pattern 
+    """
+
+    def __init__(self) -> None:
+        self.camera_process, self.listener, self.is_done = start_picamera()
+        
+    def start(self) -> bool:
+        if not self.camera_process.is_alive():
+            self.camera_process.start()
+            return True
+        return False
+    
+    def finish(self) -> bool:
+        """Attempt to join the camera process and close pipes, signal the camera process to halt with is_done Event
+        Returns if the process was successfully joined
+        """
+        exit_code = None
+        try:
+            self.is_done.set()
+            if self.listener.poll():
+                self.listener.recv() # Remove block for sender to allow exit condition
+            self.camera_process.join(timeout=15)
+            exit_code = self.camera_process.exitcode
+            self.camera_process.close()
+            self.listener.close()
+        finally:
+            return exit_code is not None 
+            
+    def __enter__(self):
+        self.start()
+        return self.listener
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.finish()
+
 if __name__ == '__main__':
-    # mp.set_start_method('fork')
-    # listen, shout = Pipe()
-    
-    # p = Process(target=drive_camera, args=(shout,))
-    # p.start()
-    
-    # payload = None
-    # for _ in range(100):
-    #     received = False
-    #     while listen.poll():
-    #         sent_at, payload = listen.recv()
-    #         received = True
-    #     if received:
+    """Testing just using capture_array on raw output resulted in a max fps of around 14 to 15
+    Using the context manager keeps the buildup and burndown steps for the picamera subprocess managed
+    """
 
-    #         print(f"FPS: {1/(time.time() - sent_at)}")
-    #         # print(payload)
-    #         image = Image.fromarray(payload, mode="RGB")
-    #         image.save(f"bad_pictures/example_{time.time()}.jpg")
+    with PicameraManager() as visual_listener:
+        payload = None
+        loop_time = time.time()
+        delays = list()
+        MAX_DELAY = 0.2 # Try to skip images more than MAX_DELAY seconds old
+        for _ in range(1000):
+            received = False
+            while visual_listener.poll():
+                sent_at, payload = visual_listener.recv()
+                received = True
+                if sent_at - loop_time < MAX_DELAY:
+                    break
 
-    #     time.sleep(0.1)
-    # p.join()
-    # p.close()
-    # sys.exit()
-
-    camera_process, visual_listener, is_done = start_picamera()
-    payload = None
-    for _ in range(20):
-        received = False
-        while visual_listener.poll():
-            sent_at, payload = visual_listener.recv()
-        if received:
-            print("Received an image frame")
-            image = Image.fromarray(payload, mode="RGB")
-            image.save(f"bad_pictures/example_{time.time()}.jpg")
-        time.sleep(0.1) # Delay to release lock on visual_listener for sending
-    is_done.set()
-    camera_process.join()
-    camera_process.close()
-    visual_listener.close()
-    sys.exit()
+            if received:
+                delay = time.time() - sent_at
+                delays.append(delay)
+                # print(f"Received an image frame, delay: {delay}, FPS: {1/delay}")
+                # image = Image.fromarray(payload, mode="RGB")
+                # image.save(f"bad_pictures/example_{time.time()}.jpg")
+            time.sleep(0.05) # Delay to release lock on visual_listener for sending
+            loop_time = time.time()
+    print(f"Average delay: {sum(delays)/len(delays)}; Average FPS: {1/sum(delays)*len(delays)}"
