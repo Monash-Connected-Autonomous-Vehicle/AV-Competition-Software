@@ -6,6 +6,12 @@ import numpy as np
 
 # Define the Camera Variable 
 picam2 = Picamera2()
+## Achieved avg. 47FPS with this configuration, 3-6 buffers had the same speed, 1-2 were slower.
+configuration = picam2.create_video_configuration(main={"size": (1920, 1080)},
+                                                lores={"size": (640, 480)},
+                                                controls={"FrameRate":60},
+                                                buffer_count=6)
+picam2.configure(configuration)
 # Initiate the PiCamera
 picam2.start()
 time.sleep(1)
