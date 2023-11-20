@@ -6,6 +6,7 @@ from picamera2 import Picamera2
 import cv2
 from image_tools import Crop, Frame, highlight_color
 import numpy as np
+from motion import motion as motion
 
 load_dotenv()
 
@@ -75,7 +76,7 @@ while True:
 
         if red_highlighted_image.check_color_threshold(5):
             print("Red light is ON")
-            # stop()
+            motion.stop()
         else:
             print("Red light is OFF")
 
