@@ -1,5 +1,8 @@
 """
 Helper functions for the MCAV autonomous vehicle building workshop.
 
-More documentation to be added once package is fleshed out
+There are 2 main packages:
+
+- motion — for driving the vehicle
+- camera — for operations on images captured from camera
 """

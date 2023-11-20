@@ -1,26 +1,60 @@
-from picamera2 import Picamera2
+from typing import Any
+
+from picamera2 import Picamera2, Preview
+from dotenv import load_dotenv
+from roboflow import Roboflow
+import os
 import time
-import cv2 
-import matplotlib.pyplot as plt
-import numpy as np
+import datetime
 
-# Define the Camera Variable 
-picam2 = Picamera2()
-## Achieved avg. 47FPS with this configuration, 3-6 buffers had the same speed, 1-2 were slower.
-configuration = picam2.create_video_configuration(main={"size": (1920, 1080)},
-                                                lores={"size": (640, 480)},
-                                                controls={"FrameRate":60},
-                                                buffer_count=6)
-picam2.configure(configuration)
-# Initiate the PiCamera
-picam2.start()
-time.sleep(1)
+load_dotenv()
 
-# Request for the capturing of an image and convert it into array. 
-array = picam2.capture_array("main")
-print(array.shape)
 
-#rgba = cv2.cvtColor(array, cv2.COLOR_RGB2RGBA)
-plt.imshow(array)
-plt.show()
+def run_model(image_file: float):
+    """
+    Runs trained Roboflow model hosted locally
+    :param image_file: image file name without extension
+    """
+    rf = Roboflow(api_key='{}'.format(os.environ.get('ROBOFLOW_KEY')))
+    project = rf.workspace().project('codedrive-traffic-lights')
+    model = project.version(1).model
+    prediction = model.predict('data/{}.jpg'.format(image_file), confidence=50, overlap=50).json()
+    print(prediction)
+    model.predict('data/{}.jpg'.format(image_file), confidence=50, overlap=50).save(
+        'output/{}-model.jpg'.format(image_file))
 
+
+def capture_image_loop(picam2: Any):
+    timestamp = datetime.datetime.now()
+    unix_timestamp = time.mktime(timestamp.timetuple())
+    time.sleep(5)
+
+    picam2.switch_mode_and_capture_file(capture_config, file_output="data/{}.jpg".format(unix_timestamp))
+    run_model(unix_timestamp)
+
+
+if __name__ == '__main__':
+    # Define the Camera Variable
+    picam2 = Picamera2()
+
+    # Initialise config
+    preview_config = picam2.create_preview_configuration(main={"size": (1640, 1232)})
+    # TODO: Look into resizing the captured image
+    capture_config = picam2.create_still_configuration(main={"size": (1640, 1232)})
+    # capture_config = picam2.create_still_configuration(main={ "size": (820, 616) })
+
+    # Initiate the PiCamera
+    picam2.configure(preview_config)
+    picam2.start_preview(Preview.QTGL)
+    picam2.start()
+
+    while True:
+        capture_image_loop(picam2)
+
+    # # Request for the capturing of an image and convert it into array.
+    # array = picam2.capture_array("main")
+    # print(array.shape)
+
+    # #rgba = cv2.cvtColor(array, cv2.COLOR_RGB2RGBA)
+    # plt.imshow(array)
+    # plt.show()
