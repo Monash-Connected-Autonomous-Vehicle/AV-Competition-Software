@@ -35,9 +35,9 @@ def init_camera():
     return cam
 
 
-def detect_colour(image, colour, threshold, drive_fn: Callable):
+def detect_colour(image, colour, colour_variance, threshold, drive_fn: Callable):
     if image is not None and image.shape[0] > 0 and image.shape[1] > 0:
-        highlighted_image = highlight_color(image, colour, threshold)
+        highlighted_image = highlight_color(image, colour, colour_variance)
 
         # Check color threshold within the highlighted area
         percentage = (np.count_nonzero(highlighted_image.img) / highlighted_image.img.size) * 100
@@ -100,7 +100,7 @@ def preview_obj_detection():
     cv2.destroyAllWindows()
 
 
-def obj_detection_with_motor(colour: Any, threshold: Any, drive_fn: Callable):
+def obj_detection_with_motor(colour: Any, colour_variance: Any, threshold: Any, drive_fn: Callable):
     """
     Perform object detection and provide a callback function to
     execute drive commands while NO object is detected
@@ -108,6 +108,7 @@ def obj_detection_with_motor(colour: Any, threshold: Any, drive_fn: Callable):
     ----------
     drive_fn
     colour
+    colour_variance
     threshold
 
     Returns
@@ -148,7 +149,10 @@ def obj_detection_with_motor(colour: Any, threshold: Any, drive_fn: Callable):
             test1 = Crop(frame, slice1)
 
             image_crop = test1.frame.image_lab[slice1[1]:slice2[1], slice1[0]:slice2[0]]
-            detect_colour(image_crop, colour, threshold, drive_fn)
+            detect_colour(image_crop, colour, colour_variance, threshold, drive_fn)
+
+        # Drive if there is no detection
+        drive_fn()
 
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):

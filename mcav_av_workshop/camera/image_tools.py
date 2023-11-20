@@ -6,57 +6,55 @@ import numpy as np
 import cv2
 from cv2 import aruco
 from matplotlib import pyplot as plt
-    
+
 from mcav_av_workshop.config import *
 
-
-# Various colors that can be used as defaults by participants
-RED  = cv2.cvtColor(np.uint8([[[140, 15, 30  ]]]), cv2.COLOR_RGB2LAB)[0,0,:]  # A better red could be found for the application, interseting problem for participants!
-SKY  = cv2.cvtColor(np.uint8([[[110, 150, 180]]]), cv2.COLOR_RGB2LAB)[0,0,:]
-GREY = cv2.cvtColor(np.uint8([[[78,  82,  78 ]]]), cv2.COLOR_RGB2LAB)[0,0,:]
-GREEN = cv2.cvtColor(np.uint8([[[0, 128,    0]]]), cv2.COLOR_RGB2LAB)[0,0,:]
-WHITE = cv2.cvtColor(np.uint8([[[230, 240,255]]]), cv2.COLOR_RGB2LAB)[0,0,:]
-BLUE = cv2.cvtColor(np.uint8([[[140, 200, 240]]]), cv2.COLOR_RGB2LAB)[0,0,:] 
 
 class Frame:
     """
     """
+
     def __init__(self, resolution) -> None:
         self.resolution = resolution
-        self.camera_intrisic = CAMERA_INTRINSIC
+        self.camera_intrinsic = CAMERA_INTRINSIC
         self.camera_distortion = CAMERA_DISTORTION
 
-        self.rect_mat, self.roi = cv2.getOptimalNewCameraMatrix(CAMERA_INTRINSIC, CAMERA_DISTORTION, 
+        self.rect_mat, self.roi = cv2.getOptimalNewCameraMatrix(CAMERA_INTRINSIC, CAMERA_DISTORTION,
                                                                 resolution, 1, resolution)
-        self.mapx, self.mapy = cv2.initUndistortRectifyMap(CAMERA_INTRINSIC, CAMERA_DISTORTION, 
+        self.mapx, self.mapy = cv2.initUndistortRectifyMap(CAMERA_INTRINSIC, CAMERA_DISTORTION,
                                                            None, self.rect_mat, resolution, 5)
-        
+
         self.image_lab = None
         self.image_gray = None
 
-
     def update_image(self, raw_image):
-        raw_image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) #Convert the image from BGR to RGB. cv2 default reads image as BGR
+        raw_image = cv2.cvtColor(raw_image,
+                                 cv2.COLOR_BGR2RGB)  # Convert the image from BGR to RGB. cv2 default reads image as BGR
         rect_img = cv2.remap(raw_image, self.mapx, self.mapy, cv2.INTER_LINEAR)
 
-        if self.image_lab is not None: self.image_lab[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)  # Alter image in place if frame already initialized
-        else: self.image_lab = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)
+        if self.image_lab is not None:
+            self.image_lab[:] = cv2.cvtColor(rect_img,
+                                             cv2.COLOR_RGB2LAB)  # Alter image in place if frame already initialized
+        else:
+            self.image_lab = cv2.cvtColor(rect_img, cv2.COLOR_RGB2LAB)
 
-        if self.image_gray is not None: self.image_gray[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
-        else: self.image_gray = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
-        
+        if self.image_gray is not None:
+            self.image_gray[:] = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
+        else:
+            self.image_gray = cv2.cvtColor(rect_img, cv2.COLOR_RGB2GRAY)
+
 
 class Crop:
     """
     """
+
     def __init__(self, frame, slice) -> None:
         self.frame = frame
         self.slice = slice
-    
+
     def __getitem__(self, overlay_slice):
-        return Crop(self.frame, np.s_[Crop._compose_slices(self.slice[0], overlay_slice[0]), 
-                                      Crop._compose_slices(self.slice[1], overlay_slice[1])], self.image)
-        
+        return Crop(self.frame, np.s_[Crop._compose_slices(self.slice[0], overlay_slice[0]),
+        Crop._compose_slices(self.slice[1], overlay_slice[1])], self.image)
 
     def aruco_pos(self):
         corners, ids, _ = aruco.detectMarkers(self.frame.image_gray[self.slice], ARUCO_DICT, parameters=ARUCO_PARAMS)
@@ -80,7 +78,7 @@ class Crop:
         overlay_slice = np.s_[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
         cropped_lab_image = self.frame.image_lab[overlay_slice]
-       
+
         # Display the imagens with the bounding box
         cv2.imshow("Original Image", self.frame.image_lab)
         return (cropped_lab_image, highlight_color(cropped_lab_image, colour_to_highlight, thresh))
@@ -100,20 +98,23 @@ class Crop:
         if start == 0: start = None
         return slice(start, stop)
 
+
 class Image:
     """ Dummy class for code layout planning """
+
     def __init__(self, img) -> None:
         self.img = img
 
 
 class HighlightedImage(Image):
     """ Dummy class for code layout planning """
+
     def __init__(self, bin_img, color) -> None:
         super().__init__(bin_img)
         self.color = color
 
     def check_color_threshold(self, threshold) -> bool:
-        return ((np.count_nonzero(self.img))/(self.img.size)*100) >= threshold
+        return ((np.count_nonzero(self.img)) / (self.img.size) * 100) >= threshold
 
 
 def highlight_color(image, color, thresh):
@@ -142,47 +143,7 @@ def highlight_color(image, color, thresh):
     Perceptual uniformity is important when we want to use a single thresholding value for components.
     See morea bout LAB colorspace here: https://learnopencv.com/color-spaces-in-opencv-cpp-python/
     """
-    color_low = np.where(color > thresh, color, thresh)-thresh
-    color_high = np.where(color < 255-thresh, color, 255-thresh)+thresh
+    color_low = np.where(color > thresh, color, thresh) - thresh
+    color_high = np.where(color < 255 - thresh, color, 255 - thresh) + thresh
 
     return HighlightedImage(cv2.inRange(image, color_low, color_high), color)
-
-
-
-
-if __name__ == '__main__':
-    """
-    Junk testing code can go here, this file should never be called directly in normal operation
-    """
-    filename = 'mcav_av_workshop/test/STOP.jpg'
-    test_img = cv2.imread(filename, 1)
-
-    frame = Frame(test_img.shape[:2])
-    frame.update_image(test_img)
-
-    slice1 = (900, 600)
-    slice2 = (1110, 870)
-
-    test1 = Crop(frame, slice1)
- 
-    cropA= test1.crop_bounding_box(slice1, slice2, RED, 30)
-    
-    cv2.imshow("Cropped Image1", cropA[0])
-
-    # waits for user to press any key
-    # (this is necessary to avoid Python kernel form crashing)
-    cv2.waitKey(0)
-    
-    # closing all open windows
-    cv2.destroyAllWindows()
-        
-    plt.imshow(cropA[1].img)
-
-    #while True:
-    #    if cropA[1].check_color_threshold(30):
-    #        print("stop")
-    #    print("drive")
-
-    plt.show()
-
-
