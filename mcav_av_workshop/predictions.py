@@ -6,7 +6,7 @@ from picamera2 import Picamera2
 import cv2
 from image_tools import Crop, Frame, highlight_color
 import numpy as np
-from motion import motion as motion
+from motion import motion
 
 load_dotenv()
 
@@ -61,30 +61,30 @@ while True:
         slice2 = (x2, y2)
 
         test1 = Crop(frame, slice1)
+
+        image_crop = test1.frame.image_lab[slice1[1]:slice2[1], slice1[0]:slice2[0]]
+        print(image_crop.shape)
         # highlight red pixels in bounding box crop
-        red_highlighted_image = highlight_color(test1.frame.image_lab[slice1[1]:slice2[1], slice1[0]:slice2[0]], RED,
-                                                40)
+        if image_crop is not None and image_crop.shape[0] > 0 and image_crop.shape[1] > 0:
+            red_highlighted_image = highlight_color(image_crop, RED, 40)
 
-        # Print information for debugging
-        print("Threshold percentage:", red_highlighted_image.check_color_threshold(30))
-        print("Percentage of red pixels:",
-              (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100)
+            # Print information for debugging
+            print("Threshold percentage:", red_highlighted_image.check_color_threshold(30))
+            print("Percentage of red pixels:",
+                  (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100)
 
-        # Check color threshold within the highlighted area
-        percentage = (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100
-        print("Calculated percentage:", percentage)
+            # Check color threshold within the highlighted area
+            percentage = (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100
+            print("Calculated percentage:", percentage)
 
-        if red_highlighted_image.check_color_threshold(5):
-            print("Red light is ON")
-            motion.stop()
-        else:
-            print("Red light is OFF")
+            if red_highlighted_image.check_color_threshold(5):
+                print("Red light is ON")
+                motion.stop()
+            else:
+                print("Red light is OFF")
 
-        # Display only the highlighted area within the bounding box
-        cv2.imshow('Output', red_highlighted_image.img)
-
-    # Display the resulting frame
-    # cv2.imshow('Webcam', img)
+            # Display only the highlighted area within the bounding box
+            cv2.imshow('Output', red_highlighted_image.img)
 
     # Break the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
