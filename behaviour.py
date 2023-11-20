@@ -7,8 +7,7 @@ from mcav_av_workshop import predict, motion, colours
 
 
 def main():
-    # predict.preview_obj_detection()
-    predict.obj_detection_with_motor(colours.RED, 40, 1, drive_callback)
+    predict.preview_obj_detection()
 
 
 def drive():

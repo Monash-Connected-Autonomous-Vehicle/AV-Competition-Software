@@ -29,6 +29,10 @@ def init_camera():
     """
     cam = Picamera2()
     capture_config = cam.create_still_configuration(main={"size": (1640, 1232)})
+    video_config = cam.create_video_configuration(main={"size": (1920, 1080)},
+                                                  lores={"size": (640, 480)},
+                                                  controls={"FrameRate": 60},
+                                                  buffer_count=6)
     cam.configure(capture_config)
     cam.start()
     time.sleep(1)
@@ -100,16 +104,16 @@ def preview_obj_detection():
     cv2.destroyAllWindows()
 
 
-def obj_detection_with_motor(colour: Any, colour_variance: Any, threshold: Any, drive_fn: Callable):
+def drive_with_obj_colour_detection(colour: Any, colour_variance: Any, threshold: Any, drive_fn: Callable):
     """
-    Perform object detection and provide a callback function to
-    execute drive commands while NO object is detected
+    Perform object detection in conjunction with colour filtering
+    and provide a callback function to execute drive commands while NO object is detected
     Parameters
     ----------
     drive_fn
     colour
     colour_variance
-    threshold
+    threshold: percentage of matching colour in bounding box to trigger stop
 
     Returns
     -------
