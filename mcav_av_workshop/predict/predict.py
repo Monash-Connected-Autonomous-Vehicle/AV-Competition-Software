@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from roboflow import Roboflow
 from picamera2 import Picamera2
 from mcav_av_workshop.motion import motion
-from mcav_av_workshop.camera.image_tools import Crop, Frame, highlight_color
+from mcav_av_workshop.camera.image_tools import Crop, Frame, highlight_color, RED
 
 load_dotenv()
 
@@ -91,6 +91,8 @@ def obj_detection_with_motor(cam: Any, model: Any, drive_fn: Callable):
     -------
 
     """
+    motion.setup()
+
     while True:
         cam_array = cam.capture_array("main")
         test_img = cv2.cvtColor(cam_array, cv2.COLOR_BGRA2RGB)
@@ -149,6 +151,11 @@ def obj_detection_with_motor(cam: Any, model: Any, drive_fn: Callable):
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+    # When everything is done, release the capture
+    motion.destroy()
+    cam.close()
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
