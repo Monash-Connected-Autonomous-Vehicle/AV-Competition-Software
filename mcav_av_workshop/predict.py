@@ -7,8 +7,8 @@ from typing import Any, Callable
 from dotenv import load_dotenv
 from roboflow import Roboflow
 from picamera2 import Picamera2
-from mcav_av_workshop.motion import motion
-from mcav_av_workshop.camera.image_tools import Crop, Frame, highlight_color, RED
+from motion import motion
+from camera.image_tools import Crop, Frame, highlight_color, RED
 
 load_dotenv()
 
@@ -143,7 +143,6 @@ def obj_detection_with_motor(cam: Any, model: Any, drive_fn: Callable):
                     time.sleep(0.5)
                 else:
                     print("Red light is OFF")
-                    motion.drive_forward(5)
 
                 # Display only the highlighted area within the bounding box
                 cv2.imshow('Output', red_highlighted_image.img)
@@ -162,3 +161,7 @@ if __name__ == '__main__':
     model = get_model()
     cam = init_camera()
     preview_obj_detection(cam, model)
+
+
+    def drive():
+        motion.drive_forward(5)
