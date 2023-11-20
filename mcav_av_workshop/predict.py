@@ -7,8 +7,8 @@ from typing import Any, Callable
 from dotenv import load_dotenv
 from roboflow import Roboflow
 from picamera2 import Picamera2
-from motion import motion
-from camera.image_tools import Crop, Frame, highlight_color, RED
+from mcav_av_workshop import motion
+from mcav_av_workshop.camera.image_tools import Crop, Frame, highlight_color
 
 load_dotenv()
 
@@ -35,7 +35,30 @@ def init_camera():
     return cam
 
 
-def preview_obj_detection(cam: Any, model: Any):
+def detect_colour(image, colour, threshold, drive_fn: Callable):
+    if image is not None and image.shape[0] > 0 and image.shape[1] > 0:
+        highlighted_image = highlight_color(image, colour, threshold)
+
+        # Check color threshold within the highlighted area
+        percentage = (np.count_nonzero(highlighted_image.img) / highlighted_image.img.size) * 100
+        print("Percentage of colour detected: {}%".format(percentage))
+
+        if highlighted_image.check_color_threshold(threshold):
+            print("Red light is ON")
+            motion.stop()
+            time.sleep(0.5)
+        else:
+            print("Red light is OFF")
+            drive_fn()
+
+        # Display only the highlighted area within the bounding box
+        cv2.imshow('Colour Detection', highlighted_image.img)
+
+
+def preview_obj_detection():
+    model = get_model()
+    cam = init_camera()
+
     while True:
         cam_array = cam.capture_array("main")
 
@@ -77,21 +100,23 @@ def preview_obj_detection(cam: Any, model: Any):
     cv2.destroyAllWindows()
 
 
-def obj_detection_with_motor(cam: Any, model: Any, drive_fn: Callable):
+def obj_detection_with_motor(colour: Any, threshold: Any, drive_fn: Callable):
     """
     Perform object detection and provide a callback function to
     execute drive commands while NO object is detected
     Parameters
     ----------
     drive_fn
-    cam
-    model
+    colour
+    threshold
 
     Returns
     -------
 
     """
     motion.setup()
+    model = get_model()
+    cam = init_camera()
 
     while True:
         cam_array = cam.capture_array("main")
@@ -123,29 +148,7 @@ def obj_detection_with_motor(cam: Any, model: Any, drive_fn: Callable):
             test1 = Crop(frame, slice1)
 
             image_crop = test1.frame.image_lab[slice1[1]:slice2[1], slice1[0]:slice2[0]]
-            print(image_crop.shape)
-            # highlight red pixels in bounding box crop
-            if image_crop is not None and image_crop.shape[0] > 0 and image_crop.shape[1] > 0:
-                red_highlighted_image = highlight_color(image_crop, RED, 40)
-
-                # Print information for debugging
-                print("Threshold percentage:", red_highlighted_image.check_color_threshold(30))
-                print("Percentage of red pixels:",
-                      (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100)
-
-                # Check color threshold within the highlighted area
-                percentage = (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100
-                print("Calculated percentage:", percentage)
-
-                if red_highlighted_image.check_color_threshold(5):
-                    print("Red light is ON")
-                    motion.stop()
-                    time.sleep(0.5)
-                else:
-                    print("Red light is OFF")
-
-                # Display only the highlighted area within the bounding box
-                cv2.imshow('Output', red_highlighted_image.img)
+            detect_colour(image_crop, colour, threshold, drive_fn)
 
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -158,9 +161,7 @@ def obj_detection_with_motor(cam: Any, model: Any, drive_fn: Callable):
 
 
 if __name__ == '__main__':
-    model = get_model()
-    cam = init_camera()
-    preview_obj_detection(cam, model)
+    preview_obj_detection()
 
 
     def drive():

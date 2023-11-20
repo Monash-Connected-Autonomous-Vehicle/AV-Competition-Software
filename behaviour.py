@@ -1,13 +1,14 @@
-""" Some helpful notes written here for quick reference maybe? """
-import mcav_av_workshop  # Importing the stuff we write to help them
+"""
+This is where you will write all your code!~
+"""
 
-def camera_response(image) -> tuple[float, float]:
-    """
-    Participant code goes here! 
-    This function runs whenever the camera recieves an image, and outputs lin/ang velocity control.
-    """
+# Here we are importing the 'predict' module from the 'mcav_av_workshop' package
+from mcav_av_workshop import predict
 
-    lin_vel = 0
-    ang_vel = 0
 
-    return lin_vel, ang_vel 
+def main():
+    predict.preview_obj_detection()
+
+
+if __name__ == '__main__':
+    main()

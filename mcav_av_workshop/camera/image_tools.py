@@ -7,7 +7,7 @@ import cv2
 from cv2 import aruco
 from matplotlib import pyplot as plt
     
-from config import*
+from mcav_av_workshop.config import *
 
 
 # Various colors that can be used as defaults by participants
