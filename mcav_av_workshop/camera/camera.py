@@ -1,3 +1,5 @@
+from typing import Any
+
 from picamera2 import Picamera2, Preview
 from dotenv import load_dotenv
 from roboflow import Roboflow
@@ -22,6 +24,15 @@ def run_model(image_file: float):
         'output/{}-model.jpg'.format(image_file))
 
 
+def capture_image_loop(picam2: Any):
+    timestamp = datetime.datetime.now()
+    unix_timestamp = time.mktime(timestamp.timetuple())
+    time.sleep(5)
+
+    picam2.switch_mode_and_capture_file(capture_config, file_output="data/{}.jpg".format(unix_timestamp))
+    run_model(unix_timestamp)
+
+
 if __name__ == '__main__':
     # Define the Camera Variable
     picam2 = Picamera2()
@@ -38,12 +49,7 @@ if __name__ == '__main__':
     picam2.start()
 
     while True:
-        timestamp = datetime.datetime.now()
-        unix_timestamp = time.mktime(timestamp.timetuple())
-        time.sleep(5)
-
-        picam2.switch_mode_and_capture_file(capture_config, file_output="data/{}.jpg".format(unix_timestamp))
-        run_model(unix_timestamp)
+        capture_image_loop(picam2)
 
     # # Request for the capturing of an image and convert it into array.
     # array = picam2.capture_array("main")
