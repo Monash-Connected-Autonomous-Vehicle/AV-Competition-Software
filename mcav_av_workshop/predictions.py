@@ -78,12 +78,12 @@ while True:
             percentage = (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100
             print("Calculated percentage:", percentage)
 
-        if red_highlighted_image.check_color_threshold(15):
-            print("Red light is ON")
-            motion.stop()
-        else:
-            print("Red light is OFF")
-            motion.drive_forward(1)
+            if red_highlighted_image.check_color_threshold(15):
+                print("Red light is ON")
+                motion.stop()
+            else:
+                print("Red light is OFF")
+                motion.drive_forward(1)
 
             # Display only the highlighted area within the bounding box
             cv2.imshow('Output', red_highlighted_image.img)
