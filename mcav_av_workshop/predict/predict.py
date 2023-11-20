@@ -18,14 +18,6 @@ cam.configure(capture_config)
 cam.start()
 time.sleep(1)
 
-# image_path = "./output_images/output_4.jpg"
-
-# infer on a local image
-# results = model.predict(image_path, confidence=36, overlap=50).json()
-
-# Load the image
-# image = cv2.imread(image_path, 1)
-
 while cam.is_open:
     cam_array = cam.capture_array("main")
 
