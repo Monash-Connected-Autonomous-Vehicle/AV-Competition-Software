@@ -11,6 +11,7 @@ from motion import motion as motion
 load_dotenv()
 
 RED = cv2.cvtColor(np.uint8([[[140, 15, 30]]]), cv2.COLOR_RGB2LAB)[0, 0, :]
+motion.setup()
 
 rf = Roboflow(api_key="{}".format(os.environ.get('ROBOFLOW_KEY')))  # Change to your API KEY
 project = rf.workspace().project("codedrive-traffic-lights")
@@ -74,11 +75,12 @@ while True:
         percentage = (np.count_nonzero(red_highlighted_image.img) / red_highlighted_image.img.size) * 100
         print("Calculated percentage:", percentage)
 
-        if red_highlighted_image.check_color_threshold(5):
+        if red_highlighted_image.check_color_threshold(15):
             print("Red light is ON")
             motion.stop()
         else:
             print("Red light is OFF")
+            motion.drive_forward(1)
 
         # Display only the highlighted area within the bounding box
         cv2.imshow('Output', red_highlighted_image.img)
@@ -91,6 +93,7 @@ while True:
         break
 
 # When everything is done, release the capture
+motion.destroy()
 cam.close()
 cv2.destroyAllWindows()
 
