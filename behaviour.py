@@ -7,10 +7,16 @@ from mcav_av_workshop import colours, motion, predict
 
 
 def main():
+    """
+    Test out object detection commands here :D
+    """
     predict.preview_obj_detection()
 
 
 def drive():
+    """
+    Test out driving commands here :)
+    """
     motion.setup()
     # Perform driving commands here
 
@@ -18,12 +24,17 @@ def drive():
 
 
 def drive_callback():
-    # Perform driving commands for when traffic light is not detected
-    # No need to setup or destroy here
-    # ——————————————————————————————————————————————————————————————
-    # Please use short driving command (<1 second) as these commands
-    # will be called in a loop
-    # ——————————————————————————————————————————————————————————————
+    """
+    Perform these driving commands while traffic light is NOT detected
+
+    - There is no need to call motion.setup() or motion.destroy() here
+
+    ——————————————————————————————————————————————————————————————
+    Please use short driving command (<1 second) as these commands
+    will be called in a loop
+    ——————————————————————————————————————————————————————————————
+    """
+
     pass
 
 
