@@ -11,8 +11,8 @@ BIN2 = 24
 
 
 def drive_forward(time_s):
-    L_Motor.ChangeDutyCycle(100)
-    R_Motor.ChangeDutyCycle(100)
+    L_Motor.ChangeDutyCycle(40)
+    R_Motor.ChangeDutyCycle(40)
     GPIO.output(AIN2, False)
     GPIO.output(AIN1, True)
     GPIO.output(BIN2, False)
@@ -21,8 +21,8 @@ def drive_forward(time_s):
 
 
 def drive_backward(time_s):
-    L_Motor.ChangeDutyCycle(100)
-    R_Motor.ChangeDutyCycle(100)
+    L_Motor.ChangeDutyCycle(40)
+    R_Motor.ChangeDutyCycle(40)
     GPIO.output(AIN2, True)
     GPIO.output(AIN1, False)
     GPIO.output(BIN2, True)
@@ -31,8 +31,8 @@ def drive_backward(time_s):
 
 
 def turn_left(time_s):
-    L_Motor.ChangeDutyCycle(100)
-    R_Motor.ChangeDutyCycle(100)
+    L_Motor.ChangeDutyCycle(40)
+    R_Motor.ChangeDutyCycle(40)
     GPIO.output(AIN2, True)
     GPIO.output(AIN1, False)
     GPIO.output(BIN2, False)
@@ -41,8 +41,8 @@ def turn_left(time_s):
 
 
 def turn_right(time_s):
-    L_Motor.ChangeDutyCycle(100)
-    R_Motor.ChangeDutyCycle(100)
+    L_Motor.ChangeDutyCycle(40)
+    R_Motor.ChangeDutyCycle(40)
     GPIO.output(AIN2, False)
     GPIO.output(AIN1, True)
     GPIO.output(BIN2, True)
